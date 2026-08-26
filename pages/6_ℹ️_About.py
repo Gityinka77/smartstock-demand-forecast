@@ -1,5 +1,5 @@
 import streamlit as st
-from styles import apply_global_styles, render_sidebar_logo, render_header_banner
+from styles import apply_global_styles, render_header_banner
 
 # ============================================================
 # PAGE CONFIGURATION
@@ -99,8 +99,6 @@ st.html(
 # SIDEBAR
 # ============================================================
 with st.sidebar:
-    render_sidebar_logo()
-
     st.markdown("---")
 
     st.subheader("ℹ️ About")

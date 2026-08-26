@@ -476,9 +476,9 @@ def apply_global_styles():
             background:
                 linear-gradient(
                     90deg,
-                    rgba(4, 54, 34, 0.90) 0%,
-                    rgba(4, 54, 34, 0.70) 48%,
-                    rgba(4, 54, 34, 0.15) 100%
+                    rgba(4, 54, 34, 0.30) 0%,
+                    rgba(4, 54, 34, 0.15) 48%,
+                    rgba(4, 54, 34, 0.03) 100%
                 );
 
             pointer-events:
