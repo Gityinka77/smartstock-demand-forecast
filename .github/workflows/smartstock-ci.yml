@@ -1,0 +1,82 @@
+name: SmartStock CI
+
+on:
+  push:
+    branches: [main, 'chatgpt/**']
+  pull_request:
+    branches: [main]
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+          cache: pip
+
+      - name: Install dependencies
+        run: python -m pip install -r requirements.txt
+
+      - name: Compile Python files
+        run: python -m compileall -q app.py styles.py pages utils
+
+      - name: Smoke-test shared forecasting engine
+        run: |
+          python - <<'PY'
+          import pandas as pd
+          from utils.forecast_engine import build_feature_row, recursive_forecast
+
+          class SmokeModel:
+              n_features_in_ = 22
+              def predict(self, X):
+                  assert X.shape[1] == 22
+                  assert list(X.columns) == FEATURE_COLUMNS
+                  return [10.0]
+
+          FEATURE_COLUMNS = [
+              'Unit_Price_NGN', 'Is_Payday_Period', 'Is_Promotion',
+              'Discount_Percent', 'Is_Weekend', 'Is_Holiday',
+              'Month', 'Lag_1', 'Lag_7', 'Rolling_Mean_7',
+              'Rolling_Std_7', 'Day_of_Month', 'Quarter',
+              'Category_Beverages', 'Category_Dairy', 'Category_Grains',
+              'Category_Pantry', 'Category_Staples', 'Category_Toiletries',
+              'Season_Rainy', 'Rainfall_Severity_Light', 'Rainfall_Severity_None'
+          ]
+
+          row = build_feature_row(
+              model_features=FEATURE_COLUMNS,
+              product_category='Beverages',
+              date=pd.Timestamp('2026-08-25'),
+              unit_price=500,
+              lag_1=10,
+              lag_7=12,
+              rolling_mean_7=11,
+              rolling_std_7=1.5,
+              promotion=True,
+              discount_percent=10,
+              rainfall='Light',
+          )
+          assert row.shape == (1, 22)
+          assert row['Is_Payday_Period'].iloc[0] == 1
+
+          result = recursive_forecast(
+              model=SmokeModel(),
+              model_features=FEATURE_COLUMNS,
+              product_category='Beverages',
+              start_date=pd.Timestamp('2026-08-24'),
+              demand_history=[8, 9, 10, 11, 12, 10, 13],
+              unit_price=500,
+              forecast_days=7,
+              promotion=False,
+              discount_percent=0,
+              rainfall='None',
+          )
+          assert len(result) == 7
+          assert (result['Forecast Demand'] >= 0).all()
+          print('Forecast engine smoke test passed.')
+          PY
