@@ -1,504 +1,226 @@
+import os
+
+import joblib
 import pandas as pd
-import numpy as np
 import plotly.graph_objects as go
 import streamlit as st
 
 from styles import apply_global_styles
+from utils.forecast_engine import recursive_forecast
 
-# Flexible import fallback in case data_loader function naming varies
-try:
-    from utils.data_loader import (
-        load_sales_data,
-        detect_columns,
-        load_model_artifacts
-    )
-except ImportError:
-    from utils.data_loader import (
-        load_data as load_sales_data,
-        detect_columns,
-        load_model_artifacts
-    )
-
-
-# ============================================================
-# PAGE CONFIGURATION
-# ============================================================
 
 st.set_page_config(
-    page_title="SmartStock - Inventory Advisory",
+    page_title="SmartStock AI - Inventory Advisory",
     page_icon="📦",
     layout="wide",
-    initial_sidebar_state="expanded"
+    initial_sidebar_state="expanded",
 )
-
-
-# ============================================================
-# GLOBAL STYLES
-# ============================================================
-
 apply_global_styles()
 
-
-# ============================================================
-# PAGE-SPECIFIC STYLES
-# ============================================================
-
-st.markdown(
-    """
-    <style>
-    .stock-header {
-        background: linear-gradient(135deg, #0F172A 0%, #172554 55%, #164E63 100%);
-        padding: 30px 32px;
-        border-radius: 20px;
-        margin-bottom: 25px;
-        border: 1px solid rgba(129, 140, 248, 0.25);
-        box-shadow: 0 15px 40px rgba(0, 0, 0, 0.25);
-    }
-
-    .stock-header-title {
-        color: #FFFFFF !important;
-        font-size: 36px !important;
-        font-weight: 800 !important;
-        margin-bottom: 8px;
-    }
-
-    .stock-header-description {
-        color: #CBD5E1 !important;
-        font-size: 16px;
-        line-height: 1.7;
-        max-width: 950px;
-    }
-
-    .recommendation-box {
-        background: linear-gradient(135deg, #111827, #172554);
-        border: 1px solid rgba(99, 102, 241, 0.35);
-        border-radius: 18px;
-        padding: 25px;
-        margin: 15px 0 25px 0;
-        box-shadow: 0 10px 30px rgba(0, 0, 0, 0.22);
-    }
-
-    .recommendation-box-title {
-        color: #FFFFFF !important;
-        font-size: 28px;
-        font-weight: 800;
-        margin-bottom: 8px;
-    }
-
-    .recommendation-box-description {
-        color: #CBD5E1 !important;
-        font-size: 15px;
-        line-height: 1.7;
-    }
-    </style>
-    """,
-    unsafe_allow_html=True
-)
+BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+DATA_PATH = os.path.join(BASE_DIR, "data", "smartstock_fmcg_sales.csv")
+MODEL_PATH = os.path.join(BASE_DIR, "model", "best_gradient_boosting_model.pkl")
+FEATURE_PATH = os.path.join(BASE_DIR, "model", "model_features.pkl")
 
 
-# ============================================================
-# PAGE HEADER
-# ============================================================
+@st.cache_data
+def load_data():
+    if not os.path.exists(DATA_PATH):
+        return None
+    data = pd.read_csv(DATA_PATH)
+    data.columns = data.columns.str.strip()
+    data["Date"] = pd.to_datetime(data["Date"], errors="coerce")
+    data["Units_Sold"] = pd.to_numeric(data["Units_Sold"], errors="coerce")
+    data["Unit_Price_NGN"] = pd.to_numeric(data["Unit_Price_NGN"], errors="coerce")
+    return data.dropna(subset=["Date", "Product_Name", "Category", "Units_Sold", "Unit_Price_NGN"]).copy()
+
+
+@st.cache_resource
+def load_artifacts():
+    try:
+        model = joblib.load(MODEL_PATH)
+        features = list(joblib.load(FEATURE_PATH))
+        if not hasattr(model, "predict"):
+            raise TypeError("Saved model does not expose predict().")
+        expected = getattr(model, "n_features_in_", None)
+        if expected is not None and expected != len(features):
+            raise ValueError(f"Model expects {expected} features but feature file contains {len(features)}.")
+        return model, features, None
+    except Exception as exc:
+        return None, None, str(exc)
+
+
+df = load_data()
+model, model_features, error = load_artifacts()
 
 st.html(
     """
-    <div class="stock-header">
-        <div class="stock-header-title">
-            📦 Stock & Reorder
-        </div>
-        <div class="stock-header-description">
-            Convert demand forecasts into practical inventory
-            and reorder recommendations for your business.
-        </div>
+    <div class="hero">
+        <h1>📦 Inventory Advisory</h1>
+        <p>Translate forecast demand into reorder-point, lead-time and safety-stock decisions for Nigerian SMEs.</p>
     </div>
     """
 )
 
-
-# ============================================================
-# LOAD DATA & MODEL
-# ============================================================
-
-df = load_sales_data()
-column_map = detect_columns(df) if df is not None else {}
-model, model_features, model_error = load_model_artifacts()
-
-
-# ============================================================
-# VALIDATION CHECKS
-# ============================================================
-
 if df is None:
     st.error("Sales dataset could not be found.")
-    st.info("Expected file: data/smartstock_fmcg_sales.csv")
+    st.info(f"Expected file: {DATA_PATH}")
     st.stop()
-
 if model is None:
-    st.error("The trained demand forecasting model could not be loaded.")
-    if model_error:
-        st.code(model_error)
+    st.error("The production forecasting model could not be loaded.")
+    st.code(error or "Unknown model loading error.")
     st.stop()
 
-date_column = column_map.get("date")
-product_column = column_map.get("product")
-category_column = column_map.get("category")
-demand_column = column_map.get("demand")
-price_column = column_map.get("price")
-
-required_columns = [date_column, product_column, category_column, demand_column, price_column]
-missing_required = [col for col in required_columns if col is None]
-
-if missing_required:
-    st.error("The sales dataset does not contain all required columns for stock recommendations.")
-    st.write("Detected columns:", df.columns.tolist())
+required = [
+    "Date", "Product_Name", "Category", "Unit_Price_NGN", "Units_Sold",
+    "Is_Payday_Period", "Season", "Is_Promotion", "Discount_Percent",
+    "Is_Weekend", "Is_Holiday", "Rainfall_Severity",
+]
+missing = [c for c in required if c not in df.columns]
+if missing:
+    st.error("The dataset is missing inventory/forecast columns.")
+    st.code("\n".join(missing))
     st.stop()
 
-
-# ============================================================
-# PREPARE DATA
-# ============================================================
-
-df = df.copy()
-df[date_column] = pd.to_datetime(df[date_column], errors="coerce")
-df[demand_column] = pd.to_numeric(df[demand_column], errors="coerce")
-df[price_column] = pd.to_numeric(df[price_column], errors="coerce")
-
-df = df.dropna(subset=[date_column, product_column, demand_column, price_column]).copy()
-df = df.sort_values([product_column, date_column]).reset_index(drop=True)
-
-st.success("✅ Gradient Boosting demand model loaded successfully.")
-
-
-# ============================================================
-# INVENTORY SETTINGS
-# ============================================================
-
-st.markdown("---")
-st.subheader("⚙️ Stock & Reorder Parameters")
-
-settings_col1, settings_col2 = st.columns(2)
-
-with settings_col1:
-    products = sorted(df[product_column].dropna().astype(str).unique().tolist())
-    selected_product = st.selectbox("Select Product", products)
-
-with settings_col2:
+with st.sidebar:
+    st.title("⚙️ Stock Settings")
+    products = sorted(df["Product_Name"].astype(str).unique())
+    selected_product = st.selectbox("Product", products)
     current_stock = st.number_input("Current Stock (units)", min_value=0, value=100, step=1)
+    forecast_days = st.slider("Forecast Horizon (days)", 7, 90, 30)
+    lead_time_days = st.number_input("Supplier Lead Time (days)", 1, 90, 7)
+    safety_stock_days = st.number_input("Safety Stock Coverage (days)", 0, 30, 3)
+    st.markdown("---")
+    promotion = st.checkbox("Promotion Assumption", value=False)
+    discount = st.slider("Expected Discount (%)", 0, 20, 0, 5)
+    if not promotion:
+        discount = 0
+    rainfall = st.selectbox("Rainfall Assumption", ["None", "Light", "Heavy"])
 
-planning_col1, planning_col2, planning_col3 = st.columns(3)
+product_df = (
+    df[df["Product_Name"].astype(str) == selected_product]
+    .sort_values("Date")
+    .copy()
+)
+category = str(product_df["Category"].mode().iloc[0])
+unit_price = float(product_df["Unit_Price_NGN"].median())
+last_date = product_df["Date"].max()
 
-with planning_col1:
-    forecast_days = st.slider("Forecast Horizon (days)", min_value=7, max_value=90, value=30, step=1)
+k1, k2, k3, k4 = st.columns(4)
+k1.metric("Product", selected_product)
+k2.metric("Category", category)
+k3.metric("Unit Price", f"₦{unit_price:,.0f}")
+k4.metric("Current Stock", f"{current_stock:,} units")
 
-with planning_col2:
-    lead_time_days = st.number_input("Supplier Lead Time (days)", min_value=1, max_value=90, value=7, step=1)
+st.caption(
+    "Reorder point logic: expected demand during supplier lead time + safety-stock coverage. "
+    "It is not a purchase order and should be reviewed against supplier constraints."
+)
 
-with planning_col3:
-    safety_stock_days = st.number_input("Safety Stock Coverage (days)", min_value=0, max_value=30, value=3, step=1)
+if st.button("🚀 Calculate Reorder Recommendation", type="primary", use_container_width=True):
+    try:
+        forecast_df = recursive_forecast(
+            model=model,
+            model_features=model_features,
+            product_category=category,
+            start_date=last_date,
+            demand_history=product_df["Units_Sold"].astype(float).tolist(),
+            unit_price=unit_price,
+            forecast_days=forecast_days,
+            promotion=promotion,
+            discount_percent=discount,
+            rainfall=rainfall,
+        )
+    except Exception as exc:
+        st.error("Demand prediction failed.")
+        st.code(str(exc))
+        st.stop()
 
+    average_daily = float(forecast_df["Forecast Demand"].mean())
+    peak_daily = float(forecast_df["Forecast Demand"].max())
+    total_forecast = int(forecast_df["Forecast Demand"].sum())
 
-# ============================================================
-# FUTURE ASSUMPTIONS
-# ============================================================
+    lead_time_demand = average_daily * lead_time_days
+    safety_stock = average_daily * safety_stock_days
+    reorder_point = lead_time_demand + safety_stock
+    reorder_quantity = max(0.0, reorder_point - current_stock)
 
-st.markdown("---")
-st.subheader("🔮 Future Demand Assumptions")
-st.caption("These assumptions are used because future promotions and rainfall are unknown at prediction time.")
-
-assumption_col1, assumption_col2, assumption_col3 = st.columns(3)
-
-with assumption_col1:
-    promotion_assumption = st.selectbox("Promotion Assumption", ["No Promotion", "Promotion"])
-
-with assumption_col2:
-    discount_assumption = st.selectbox("Expected Discount", [0, 5, 10, 15, 20], format_func=lambda x: f"{x}%")
-
-with assumption_col3:
-    rainfall_assumption = st.selectbox("Rainfall Assumption", ["None", "Light", "Heavy"])
-
-
-# ============================================================
-# PRODUCT DATA & METRICS
-# ============================================================
-
-product_df = df[df[product_column].astype(str) == selected_product].copy()
-
-if product_df.empty:
-    st.error("No historical records were found for the selected product.")
-    st.stop()
-
-product_category = product_df[category_column].mode().iloc[0]
-product_price = float(product_df[price_column].iloc[-1])
-last_historical_date = product_df[date_column].max()
-
-st.markdown("---")
-st.subheader("📋 Product Information")
-
-info1, info2, info3, info4 = st.columns(4)
-with info1:
-    st.metric("Product", selected_product)
-with info2:
-    st.metric("Category", str(product_category))
-with info3:
-    st.metric("Unit Price", f"₦{product_price:,.0f}")
-with info4:
-    st.metric("Last Sales Date", last_historical_date.strftime("%d %b %Y"))
-
-
-# ============================================================
-# HELPER FUNCTIONS
-# ============================================================
-
-def is_future_holiday(date):
-    if date.month == 12 and date.day in [24, 25, 26, 31]:
-        return 1
-    if date.month in [1, 5, 10] and date.day == 1:
-        return 1
-    return 0
-
-def get_season(date):
-    return "Rainy" if 4 <= date.month <= 10 else "Dry"
-
-
-# ============================================================
-# FORECAST ENGINE & RECOMMENDATION GENERATION
-# ============================================================
-
-generate_recommendation = st.button("🚀 Calculate Reorder Point", type="primary", use_container_width=True)
-
-if generate_recommendation:
-    history_demand = product_df.sort_values(date_column)[demand_column].astype(float).tolist()
-    future_dates = pd.date_range(start=last_historical_date + pd.Timedelta(days=1), periods=forecast_days, freq="D")
-    fallback_demand = float(np.mean(history_demand)) if len(history_demand) > 0 else 0.0
-
-    forecast_records = []
-
-    for future_date in future_dates:
-        day_of_month = future_date.day
-        month = future_date.month
-        quarter = future_date.quarter
-        is_weekend = int(future_date.weekday() >= 5)
-        is_payday = int(day_of_month >= 25)
-        is_holiday = is_future_holiday(future_date)
-        season = get_season(future_date)
-
-        is_promotion = 1 if promotion_assumption == "Promotion" else 0
-        discount_percent = int(discount_assumption) if is_promotion else 0
-
-        lag_1 = history_demand[-1] if len(history_demand) >= 1 else fallback_demand
-        lag_7 = history_demand[-7] if len(history_demand) >= 7 else fallback_demand
-        recent_7 = history_demand[-7:]
-
-        rolling_mean_7 = float(np.mean(recent_7)) if len(recent_7) > 0 else fallback_demand
-        rolling_std_7 = float(np.std(recent_7, ddof=1)) if len(recent_7) > 1 else 0.0
-
-        feature_row = {
-            "Unit_Price_NGN": product_price,
-            "Is_Payday_Period": is_payday,
-            "Is_Promotion": is_promotion,
-            "Discount_Percent": discount_percent,
-            "Is_Weekend": is_weekend,
-            "Is_Holiday": is_holiday,
-            "Month": month,
-            "Lag_1": lag_1,
-            "Lag_7": lag_7,
-            "Rolling_Mean_7": rolling_mean_7,
-            "Rolling_Std_7": rolling_std_7,
-            "Day_of_Month": day_of_month,
-            "Quarter": quarter,
-            "Category_Beverages": 0,
-            "Category_Dairy": 0,
-            "Category_Grains": 0,
-            "Category_Pantry": 0,
-            "Category_Staples": 0,
-            "Category_Toiletries": 0,
-            "Season_Rainy": int(season == "Rainy"),
-            "Rainfall_Severity_Light": int(rainfall_assumption == "Light"),
-            "Rainfall_Severity_None": int(rainfall_assumption == "None")
-        }
-
-        category_feature = f"Category_{product_category}"
-        if category_feature in feature_row:
-            feature_row[category_feature] = 1
-
-        input_df = pd.DataFrame([feature_row])
-        
-        for feature in model_features:
-            if feature not in input_df.columns:
-                input_df[feature] = 0
-
-        input_df = input_df[model_features]
-
-        try:
-            prediction = float(model.predict(input_df)[0])
-        except Exception as error:
-            st.error("Demand prediction failed.")
-            st.code(str(error))
-            st.stop()
-
-        prediction = max(0.0, prediction)
-
-        forecast_records.append({
-            "Date": future_date,
-            "Forecast Demand": prediction,
-            "Season": season,
-            "Promotion": is_promotion,
-            "Discount %": discount_percent,
-            "Weekend": is_weekend,
-            "Holiday": is_holiday,
-            "Rainfall": rainfall_assumption
-        })
-
-        history_demand.append(prediction)
-
-    forecast_df = pd.DataFrame(forecast_records)
-    forecast_df["Forecast Demand"] = forecast_df["Forecast Demand"].round(0).astype(int)
-
-    # Metrics and inventory math
-    total_forecast = float(forecast_df["Forecast Demand"].sum())
-    average_daily_demand = float(forecast_df["Forecast Demand"].mean())
-    peak_daily_demand = float(forecast_df["Forecast Demand"].max())
-
-    lead_time_demand = average_daily_demand * lead_time_days
-    safety_stock = average_daily_demand * safety_stock_days
-    required_stock = lead_time_demand + safety_stock
-    reorder_quantity = max(0.0, required_stock - current_stock)
-    stock_after_reorder = current_stock + reorder_quantity
-
-    # Status evaluation
     if current_stock < lead_time_demand:
         status = "🔴 REORDER NOW"
-        status_description = "Current stock is below estimated demand during supplier lead time."
-    elif current_stock < required_stock:
-        status = "🟡 MONITOR STOCK"
-        status_description = "Current stock covers lead-time demand but lacks sufficient safety stock buffer."
+        description = "Current stock is below estimated demand during supplier lead time."
+    elif current_stock < reorder_point:
+        status = "🟡 MONITOR / REORDER"
+        description = "Current stock covers lead-time demand but not the selected safety-stock buffer."
     else:
         status = "🟢 HEALTHY STOCK"
-        status_description = "Current stock meets lead-time demand and safety stock requirements."
+        description = "Current stock covers lead-time demand and the selected safety-stock buffer."
 
-    # UI Rendering
     st.markdown("---")
-    st.subheader("📊 Stock Status & Reorder Summary")
-    st.html(f"""
-        <div class="recommendation-box">
-            <div class="recommendation-box-title">{status}</div>
-            <div class="recommendation-box-description">{status_description}</div>
+    st.subheader("📊 Stock Decision")
+    st.html(
+        f"""
+        <div class="hero">
+            <h2>{status}</h2>
+            <p>{description}</p>
         </div>
-    """)
+        """
+    )
 
-    kpi1, kpi2, kpi3, kpi4 = st.columns(4)
-    with kpi1:
-        st.metric("Current Stock", f"{current_stock:,.0f} units")
-    with kpi2:
-        st.metric("Forecast Demand", f"{total_forecast:,.0f} units")
-    with kpi3:
-        st.metric("Required Stock", f"{required_stock:,.0f} units")
-    with kpi4:
-        st.metric("Recommended Reorder", f"{reorder_quantity:,.0f} units")
+    a, b, c, d = st.columns(4)
+    a.metric("Forecast Demand", f"{total_forecast:,} units")
+    b.metric("Avg Daily Demand", f"{average_daily:,.1f}")
+    c.metric("Reorder Point", f"{reorder_point:,.0f} units")
+    d.metric("Recommended Reorder", f"{reorder_quantity:,.0f} units")
 
-    st.markdown("---")
     st.subheader("📦 Inventory Requirement Breakdown")
-    b1, b2, b3 = st.columns(3)
-    with b1:
-        st.metric("Lead-Time Demand", f"{lead_time_demand:,.0f} units")
-    with b2:
-        st.metric("Safety Stock Buffer", f"{safety_stock:,.0f} units")
-    with b3:
-        st.metric("Stock After Reorder", f"{stock_after_reorder:,.0f} units")
+    x, y, z = st.columns(3)
+    x.metric("Lead-Time Demand", f"{lead_time_demand:,.0f} units")
+    y.metric("Safety Stock", f"{safety_stock:,.0f} units")
+    z.metric("Peak Forecast Day", f"{peak_daily:,.0f} units")
 
-    # Inventory chart
     st.markdown("---")
-    st.subheader("📊 Current Stock vs Required Stock")
-    inv_df = pd.DataFrame({
-        "Metric": ["Current Stock", "Lead-Time Demand", "Safety Stock", "Required Stock"],
-        "Units": [current_stock, lead_time_demand, safety_stock, required_stock]
+    st.subheader("📊 Stock vs Requirement")
+    chart_df = pd.DataFrame({
+        "Measure": ["Current Stock", "Lead-Time Demand", "Safety Stock", "Reorder Point"],
+        "Units": [current_stock, lead_time_demand, safety_stock, reorder_point],
     })
+    fig = go.Figure(go.Bar(x=chart_df["Measure"], y=chart_df["Units"], text=[f"{v:,.0f}" for v in chart_df["Units"]], textposition="auto"))
+    fig.update_layout(template="plotly_white", height=430, showlegend=False, margin=dict(l=20, r=20, t=30, b=20))
+    st.plotly_chart(fig, use_container_width=True)
 
-    inv_fig = go.Figure(go.Bar(
-        x=inv_df["Metric"],
-        y=inv_df["Units"],
-        text=[f"{v:,.0f}" for v in inv_df["Units"]],
-        textposition="auto",
-        textfont=dict(color="#FFFFFF", size=14)
-    ))
-    inv_fig.update_layout(
-        title=dict(text=f"{selected_product} — Reorder Profile", font=dict(color="#FFFFFF", size=20)),
-        xaxis=dict(title=dict(text="Inventory Measure", font=dict(color="#CBD5E1")), tickfont=dict(color="#CBD5E1")),
-        yaxis=dict(title=dict(text="Units", font=dict(color="#CBD5E1")), tickfont=dict(color="#CBD5E1"), gridcolor="rgba(148,163,184,0.20)"),
-        showlegend=False,
-        template="plotly_dark",
-        paper_bgcolor="#070B18",
-        plot_bgcolor="#070B18"
-    )
-    st.plotly_chart(inv_fig, use_container_width=True)
+    st.subheader("📈 Historical vs Forecast")
+    history = product_df.groupby("Date", as_index=False)["Units_Sold"].sum().sort_values("Date").tail(90)
+    combined = go.Figure()
+    combined.add_trace(go.Scatter(x=history["Date"], y=history["Units_Sold"], mode="lines", name="Historical"))
+    combined.add_trace(go.Scatter(x=forecast_df["Date"], y=forecast_df["Forecast Demand"], mode="lines+markers", name="Forecast"))
+    combined.update_layout(template="plotly_white", height=480, hovermode="x unified", margin=dict(l=20, r=20, t=30, b=20))
+    st.plotly_chart(combined, use_container_width=True)
 
-    # Forecast timeline chart
-    st.markdown("---")
-    st.subheader("📈 Historical Sales vs Forecast Horizon")
-    hist_chart = product_df.groupby(date_column)[demand_column].sum().reset_index().sort_values(date_column).tail(90)
+    st.subheader("📋 Daily Forecast")
+    display = forecast_df.copy()
+    display["Date"] = display["Date"].dt.strftime("%Y-%m-%d")
+    st.dataframe(display, use_container_width=True, hide_index=True)
 
-    fc_fig = go.Figure()
-    fc_fig.add_trace(go.Scatter(
-        x=hist_chart[date_column],
-        y=hist_chart[demand_column],
-        mode="lines",
-        name="Historical Demand",
-        line=dict(width=3, color="#6366F1")
-    ))
-    fc_fig.add_trace(go.Scatter(
-        x=forecast_df["Date"],
-        y=forecast_df["Forecast Demand"],
-        mode="lines+markers",
-        name="Forecast Demand",
-        line=dict(width=4, color="#FF6B35"),
-        marker=dict(size=7, color="#FF6B35")
-    ))
-    fc_fig.update_layout(
-        title=dict(text=f"{selected_product} — Historical and Forecast Demand", font=dict(color="#FFFFFF", size=20)),
-        xaxis=dict(title=dict(text="Date", font=dict(color="#CBD5E1")), tickfont=dict(color="#CBD5E1"), gridcolor="rgba(148,163,184,0.15)"),
-        yaxis=dict(title=dict(text="Units", font=dict(color="#CBD5E1")), tickfont=dict(color="#CBD5E1"), gridcolor="rgba(148,163,184,0.20)"),
-        legend=dict(font=dict(color="#FFFFFF"), bgcolor="rgba(7,11,24,0.65)"),
-        template="plotly_dark",
-        paper_bgcolor="#070B18",
-        plot_bgcolor="#070B18"
-    )
-    st.plotly_chart(fc_fig, use_container_width=True)
-
-    # Forecast Details & Downloads
-    st.markdown("---")
-    st.subheader("📋 Detailed Daily Forecast")
-    disp_df = forecast_df.copy()
-    disp_df["Date"] = disp_df["Date"].dt.strftime("%d %b %Y")
-    st.dataframe(disp_df, use_container_width=True, hide_index=True)
-
-    st.markdown("---")
-    st.subheader("💡 Stock & Reorder Action Plan")
-    if reorder_quantity > 0:
-        st.warning(f"**Action Required: Reorder {reorder_quantity:,.0f} units.**\n\nPlace an order for **{reorder_quantity:,.0f} units** of **{selected_product}** to cover estimated sales during supplier lead time and maintain safety stock.")
-    else:
-        st.success(f"**Action Required: No immediate reorder needed.**\n\nYour current stock of **{current_stock:,.0f} units** is adequate to cover upcoming demand.")
-
-    rec_csv = pd.DataFrame([{
+    report = pd.DataFrame([{
         "Product": selected_product,
-        "Category": product_category,
+        "Category": category,
         "Current Stock": current_stock,
         "Forecast Horizon Days": forecast_days,
         "Total Forecast Demand": total_forecast,
-        "Average Daily Demand": average_daily_demand,
-        "Peak Daily Demand": peak_daily_demand,
+        "Average Daily Demand": average_daily,
+        "Peak Daily Demand": peak_daily,
         "Lead Time Days": lead_time_days,
         "Lead Time Demand": lead_time_demand,
         "Safety Stock Days": safety_stock_days,
         "Safety Stock": safety_stock,
-        "Required Stock": required_stock,
+        "Reorder Point": reorder_point,
         "Recommended Reorder Quantity": reorder_quantity,
-        "Status": status
-    }]).to_csv(index=False).encode("utf-8")
-
+        "Status": status,
+    }])
     st.download_button(
-        label="⬇️ Download Reorder Report",
-        data=rec_csv,
-        file_name=f"stock_reorder_report_{selected_product}.csv",
+        "📥 Download Reorder Report",
+        data=report.to_csv(index=False).encode("utf-8"),
+        file_name=f"stock_reorder_report_{selected_product.lower().replace(' ', '_')}.csv",
         mime="text/csv",
-        use_container_width=True
+        use_container_width=True,
     )
