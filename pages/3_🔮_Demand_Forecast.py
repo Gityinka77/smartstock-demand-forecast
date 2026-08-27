@@ -7,6 +7,7 @@ import plotly.graph_objects as go
 import streamlit as st
 
 from styles import apply_global_styles
+from utils.i18n import t
 
 
 # ============================================================
@@ -20,11 +21,6 @@ st.set_page_config(
     initial_sidebar_state="expanded",
 )
 
-
-# ============================================================
-# GLOBAL STYLES
-# ============================================================
-
 apply_global_styles()
 
 
@@ -36,10 +32,6 @@ st.markdown(
     """
     <style>
 
-    /* ========================================================
-       FORECAST PAGE HEADER
-       ======================================================== */
-
     .forecast-page-header {
         background:
             linear-gradient(
@@ -48,49 +40,29 @@ st.markdown(
                 #2563EB 48%,
                 #0891B2 100%
             );
-
         border: 1px solid rgba(30, 64, 175, 0.30);
-
         border-radius: 20px;
-
         padding: 32px 36px;
-
         margin-bottom: 26px;
-
         box-shadow:
             0 12px 30px rgba(15, 23, 42, 0.12);
     }
 
-
     .forecast-page-header h1 {
         color: #FFFFFF !important;
-
         font-size: 36px !important;
-
         font-weight: 800 !important;
-
         margin: 0 0 10px 0 !important;
-
         line-height: 1.2;
     }
 
-
     .forecast-page-header p {
         color: #EFF6FF !important;
-
         font-size: 16px !important;
-
         line-height: 1.7;
-
         margin: 0 !important;
-
         max-width: 950px;
     }
-
-
-    /* ========================================================
-       FORECAST RESULT CARD
-       ======================================================== */
 
     .forecast-result-card {
         background:
@@ -100,112 +72,54 @@ st.markdown(
                 #1E3A8A 55%,
                 #164E63 100%
             );
-
         border:
             1px solid
             rgba(59, 130, 246, 0.30);
-
         border-radius: 18px;
-
         padding: 24px 28px;
-
         margin: 18px 0 25px 0;
-
         box-shadow:
             0 12px 30px
             rgba(15, 23, 42, 0.14);
     }
 
-
     .forecast-result-title {
         color: #FFFFFF !important;
-
         font-size: 21px !important;
-
         font-weight: 800 !important;
-
         margin-bottom: 8px;
     }
 
-
     .forecast-result-description {
         color: #E0F2FE !important;
-
         font-size: 14px !important;
-
         line-height: 1.7;
     }
-
 
     .forecast-result-description strong {
         color: #FFFFFF !important;
     }
 
-
-    /* ========================================================
-       CHART CONTAINER
-       ======================================================== */
-
-    .chart-section {
-        background: #E5E7EB;
-
-        border:
-            1px solid
-            #CBD5E1;
-
-        border-radius: 18px;
-
-        padding: 8px;
-
-        margin: 8px 0 25px 0;
-
-        box-shadow:
-            0 8px 24px
-            rgba(15, 23, 42, 0.08);
-    }
-
-
-    /* ========================================================
-       SECTION DESCRIPTIONS
-       ======================================================== */
-
     .forecast-description {
         color: #475569 !important;
-
         font-size: 14px;
-
         line-height: 1.65;
-
         margin-top: -8px;
-
         margin-bottom: 18px;
     }
 
-
-    /* ========================================================
-       STOCK PLANNING NOTE
-       ======================================================== */
-
     .planning-note {
         background: #E0F2FE;
-
         border:
             1px solid
             #BAE6FD;
-
         border-radius: 14px;
-
         padding: 16px 18px;
-
         color: #164E63;
-
         font-size: 14px;
-
         line-height: 1.65;
-
         margin: 18px 0 20px 0;
     }
-
 
     </style>
     """,
@@ -357,11 +271,11 @@ model, model_features, model_error = (
 # ============================================================
 
 st.html(
-    """
+    f"""
     <div class="forecast-page-header">
 
         <h1>
-            📈 Demand Forecast
+            📈 {t("forecast")}
         </h1>
 
         <p>
@@ -382,11 +296,8 @@ st.html(
 if df is None:
 
     st.error(
-        "Sales dataset could not be found."
-    )
-
-    st.info(
-        f"Expected file: {DATA_PATH}"
+        f"❌ {t('dataset')} "
+        f"{t('not_loaded')}"
     )
 
     st.stop()
@@ -399,11 +310,12 @@ if df is None:
 if model is None:
 
     st.error(
-        "The trained forecasting model could not be loaded."
+        f"❌ {t('production_model')} "
+        f"{t('not_loaded')}"
     )
 
     with st.expander(
-        "Model loading details"
+        t("information")
     ):
 
         st.code(
@@ -422,7 +334,8 @@ if model is None:
 if model_features is None:
 
     st.error(
-        "Model feature definitions could not be loaded."
+        f"❌ {t('feature_count')} "
+        f"{t('not_loaded')}"
     )
 
     st.stop()
@@ -431,7 +344,8 @@ if model_features is None:
 if len(model_features) == 0:
 
     st.error(
-        "The saved model feature list is empty."
+        f"❌ {t('feature_count')} "
+        f"{t('not_loaded')}"
     )
 
     st.stop()
@@ -456,7 +370,8 @@ actual_model_features = getattr(
 if (
     actual_model_features is not None
     and
-    actual_model_features != expected_feature_count
+    actual_model_features
+    != expected_feature_count
 ):
 
     st.error(
@@ -465,7 +380,8 @@ if (
     )
 
     st.write(
-        f"Model expects: {actual_model_features}"
+        f"Model expects: "
+        f"{actual_model_features}"
     )
 
     st.write(
@@ -483,27 +399,16 @@ if (
 required_columns = [
 
     "Date",
-
     "Product_Name",
-
     "Category",
-
     "Unit_Price_NGN",
-
     "Is_Payday_Period",
-
     "Season",
-
     "Is_Promotion",
-
     "Discount_Percent",
-
     "Is_Weekend",
-
     "Is_Holiday",
-
     "Rainfall_Severity",
-
     "Units_Sold",
 
 ]
@@ -567,13 +472,14 @@ df = df.sort_values(
 # ============================================================
 
 st.success(
-    f"✅ Production Gradient Boosting model loaded "
-    f"successfully — {expected_feature_count} features."
+    f"✅ {t('production_model')} "
+    f"{t('online')} "
+    f"— {expected_feature_count} features."
 )
 
 
 # ============================================================
-# SIDEBAR
+# SIDEBAR FORECAST SETTINGS
 # ============================================================
 
 with st.sidebar:
@@ -673,9 +579,11 @@ future_rainfall = st.sidebar.selectbox(
 
 st.sidebar.markdown("---")
 
+
 st.sidebar.caption(
     f"Selected Product: {selected_product}"
 )
+
 
 st.sidebar.caption(
     f"Forecast Horizon: {forecast_days} days"
@@ -739,18 +647,19 @@ historical_average = float(
 # ============================================================
 
 st.subheader(
-    f"📊 Historical Demand — {selected_product}"
+    f"📊 {t('historical_demand')} — "
+    f"{selected_product}"
 )
 
 
-st.markdown(
-    """
+st.html(
+    f"""
     <div class="forecast-description">
-        Historical demand for the selected product provides
-        the baseline used by the forecasting model.
+        {t("historical_demand")}
+        provides the baseline used by the
+        forecasting model.
     </div>
-    """,
-    unsafe_allow_html=True,
+    """
 )
 
 
@@ -774,7 +683,7 @@ with kpi1:
 with kpi2:
 
     st.metric(
-        "Average Daily Demand",
+        t("average_daily"),
         f"{historical_average:,.1f}",
     )
 
@@ -787,7 +696,7 @@ with kpi3:
     )
 
     st.metric(
-        "Total Historical Demand",
+        t("total_units"),
         f"{historical_total:,.0f}",
     )
 
@@ -823,18 +732,13 @@ fig_history = go.Figure()
 fig_history.add_trace(
     go.Scatter(
         x=historical_chart["Date"],
-
         y=historical_chart["Units_Sold"],
-
         mode="lines",
-
         name="Historical Demand",
-
         line=dict(
             color="#2563EB",
             width=3,
         ),
-
         hovertemplate=(
             "<b>%{x|%d %b %Y}</b><br>"
             "Units Sold: %{y:,.0f}"
@@ -960,22 +864,24 @@ st.plotly_chart(
 
 st.markdown("---")
 
+
 st.subheader(
     "🔮 Generate Forecast"
 )
 
 
-st.markdown(
+st.html(
     f"""
     <div class="forecast-description">
+
         Forecast the next
         <strong>{forecast_days} days</strong>
         for
         <strong>{selected_product}</strong>
         using the production model.
+
     </div>
-    """,
-    unsafe_allow_html=True,
+    """
 )
 
 
@@ -996,6 +902,7 @@ if generate_forecast:
         "Date"
     ].max()
 
+
     future_dates = pd.date_range(
         start=(
             last_date
@@ -1006,6 +913,7 @@ if generate_forecast:
         freq="D",
     )
 
+
     historical_demand = (
         product_df[
             "Units_Sold"
@@ -1014,47 +922,95 @@ if generate_forecast:
         .tolist()
     )
 
+
     forecast_records = []
+
 
     for future_date in future_dates:
 
-        if len(historical_demand) >= 1:
-            lag_1 = historical_demand[-1]
-        else:
-            lag_1 = historical_average
+        lag_1 = (
+            historical_demand[-1]
+            if len(historical_demand) >= 1
+            else historical_average
+        )
 
-        if len(historical_demand) >= 7:
-            lag_7 = historical_demand[-7]
-        else:
-            lag_7 = historical_average
 
-        last_7_values = historical_demand[-7:]
+        lag_7 = (
+            historical_demand[-7]
+            if len(historical_demand) >= 7
+            else historical_average
+        )
 
-        if len(last_7_values) > 0:
-            rolling_mean_7 = float(np.mean(last_7_values))
-        else:
-            rolling_mean_7 = historical_average
 
-        if len(last_7_values) >= 2:
-            rolling_std_7 = float(np.std(last_7_values, ddof=1))
-        else:
-            rolling_std_7 = 0.0
+        last_7_values = (
+            historical_demand[-7:]
+        )
+
+
+        rolling_mean_7 = (
+            float(
+                np.mean(last_7_values)
+            )
+            if last_7_values
+            else historical_average
+        )
+
+
+        rolling_std_7 = (
+            float(
+                np.std(
+                    last_7_values,
+                    ddof=1,
+                )
+            )
+            if len(last_7_values) >= 2
+            else 0.0
+        )
+
 
         day_of_month = future_date.day
         month = future_date.month
         quarter = future_date.quarter
-        is_weekend = int(future_date.weekday() >= 5)
-        is_payday = int(future_date.day >= 25)
+
+
+        is_weekend = int(
+            future_date.weekday() >= 5
+        )
+
+
+        is_payday = int(
+            future_date.day >= 25
+        )
+
 
         is_holiday = int(
             (
                 future_date.month == 12
-                and future_date.day in [24, 25, 26, 31]
+                and future_date.day
+                in [
+                    24,
+                    25,
+                    26,
+                    31,
+                ]
             )
-            or (future_date.month == 1 and future_date.day == 1)
-            or (future_date.month == 10 and future_date.day == 1)
-            or (future_date.month == 5 and future_date.day == 1)
+            or
+            (
+                future_date.month == 1
+                and future_date.day == 1
+            )
+            or
+            (
+                future_date.month == 10
+                and future_date.day == 1
+            )
+            or
+            (
+                future_date.month == 5
+                and future_date.day == 1
+            )
         )
+
 
         season = (
             "Rainy"
@@ -1062,124 +1018,292 @@ if generate_forecast:
             else "Dry"
         )
 
+
         row = pd.DataFrame(
             0.0,
             index=[0],
             columns=model_features,
         )
 
+
         direct_features = {
-            "Unit_Price_NGN": unit_price,
-            "Is_Payday_Period": is_payday,
-            "Is_Promotion": int(future_promotion),
-            "Discount_Percent": future_discount,
-            "Is_Weekend": is_weekend,
-            "Is_Holiday": is_holiday,
-            "Month": month,
-            "Lag_1": lag_1,
-            "Lag_7": lag_7,
-            "Rolling_Mean_7": rolling_mean_7,
-            "Rolling_Std_7": rolling_std_7,
-            "Day_of_Month": day_of_month,
-            "Quarter": quarter,
+
+            "Unit_Price_NGN":
+                unit_price,
+
+            "Is_Payday_Period":
+                is_payday,
+
+            "Is_Promotion":
+                int(future_promotion),
+
+            "Discount_Percent":
+                future_discount,
+
+            "Is_Weekend":
+                is_weekend,
+
+            "Is_Holiday":
+                is_holiday,
+
+            "Month":
+                month,
+
+            "Lag_1":
+                lag_1,
+
+            "Lag_7":
+                lag_7,
+
+            "Rolling_Mean_7":
+                rolling_mean_7,
+
+            "Rolling_Std_7":
+                rolling_std_7,
+
+            "Day_of_Month":
+                day_of_month,
+
+            "Quarter":
+                quarter,
         }
 
-        for feature_name, value in direct_features.items():
+
+        for feature_name, value in (
+            direct_features.items()
+        ):
+
             if feature_name in row.columns:
-                row.at[0, feature_name] = value
 
-        category_feature = f"Category_{product_category}"
+                row.at[
+                    0,
+                    feature_name
+                ] = value
+
+
+        category_feature = (
+            f"Category_{product_category}"
+        )
+
+
         if category_feature in row.columns:
-            row.at[0, category_feature] = 1.0
 
-        season_feature = f"Season_{season}"
+            row.at[
+                0,
+                category_feature
+            ] = 1.0
+
+
+        season_feature = (
+            f"Season_{season}"
+        )
+
+
         if season_feature in row.columns:
-            row.at[0, season_feature] = 1.0
 
-        rainfall_feature = f"Rainfall_Severity_{future_rainfall}"
+            row.at[
+                0,
+                season_feature
+            ] = 1.0
+
+
+        rainfall_feature = (
+            f"Rainfall_Severity_"
+            f"{future_rainfall}"
+        )
+
+
         if rainfall_feature in row.columns:
-            row.at[0, rainfall_feature] = 1.0
+
+            row.at[
+                0,
+                rainfall_feature
+            ] = 1.0
+
 
         row = row.astype(float)
 
+
         try:
-            prediction = float(model.predict(row)[0])
+
+            prediction = float(
+                model.predict(row)[0]
+            )
+
         except Exception as error:
-            st.error("The model prediction failed.")
-            with st.expander("Prediction error details"):
-                st.code(str(error))
-                st.write(list(row.columns))
+
+            st.error(
+                "The model prediction failed."
+            )
+
+            with st.expander(
+                "Prediction error details"
+            ):
+
+                st.code(
+                    str(error)
+                )
+
+                st.write(
+                    list(row.columns)
+                )
+
             st.stop()
 
-        prediction = max(0, prediction)
+
+        prediction = max(
+            0,
+            prediction
+        )
+
 
         forecast_records.append(
             {
-                "Date": future_date,
-                "Product": selected_product,
-                "Category": product_category,
-                "Forecast Demand": prediction,
-                "Promotion": "Yes" if future_promotion else "No",
-                "Discount (%)": future_discount if future_promotion else 0,
-                "Rainfall": future_rainfall,
+                "Date":
+                    future_date,
+
+                "Product":
+                    selected_product,
+
+                "Category":
+                    product_category,
+
+                "Forecast Demand":
+                    prediction,
+
+                "Promotion":
+                    (
+                        "Yes"
+                        if future_promotion
+                        else "No"
+                    ),
+
+                "Discount (%)":
+                    (
+                        future_discount
+                        if future_promotion
+                        else 0
+                    ),
+
+                "Rainfall":
+                    future_rainfall,
             }
         )
 
-        historical_demand.append(prediction)
 
-    forecast_df = pd.DataFrame(forecast_records)
+        historical_demand.append(
+            prediction
+        )
 
-    forecast_df["Forecast Demand"] = (
-        forecast_df["Forecast Demand"]
+
+    forecast_df = pd.DataFrame(
+        forecast_records
+    )
+
+
+    forecast_df[
+        "Forecast Demand"
+    ] = (
+        forecast_df[
+            "Forecast Demand"
+        ]
         .round(0)
         .astype(int)
     )
 
-    total_forecast = forecast_df["Forecast Demand"].sum()
-    average_forecast = forecast_df["Forecast Demand"].mean()
-    peak_forecast = forecast_df["Forecast Demand"].max()
-    minimum_forecast = forecast_df["Forecast Demand"].min()
+
+    total_forecast = (
+        forecast_df[
+            "Forecast Demand"
+        ].sum()
+    )
+
+
+    average_forecast = (
+        forecast_df[
+            "Forecast Demand"
+        ].mean()
+    )
+
+
+    peak_forecast = (
+        forecast_df[
+            "Forecast Demand"
+        ].max()
+    )
+
+
+    minimum_forecast = (
+        forecast_df[
+            "Forecast Demand"
+        ].min()
+    )
+
+
+    # ========================================================
+    # FORECAST SUMMARY
+    # ========================================================
 
     st.markdown("---")
 
-    st.subheader("📌 Forecast Summary")
 
-    st.markdown(
+    st.subheader(
+        "📌 Forecast Summary"
+    )
+
+
+    st.html(
         f"""
         <div class="forecast-description">
+
             Forecast summary for the next
             <strong>{forecast_days} days</strong>
             under the selected business assumptions.
+
         </div>
-        """,
-        unsafe_allow_html=True,
+        """
     )
 
-    forecast_kpi1, forecast_kpi2, forecast_kpi3, forecast_kpi4 = st.columns(4)
+
+    (
+        forecast_kpi1,
+        forecast_kpi2,
+        forecast_kpi3,
+        forecast_kpi4,
+    ) = st.columns(4)
+
 
     with forecast_kpi1:
+
         st.metric(
             "Total Forecast",
             f"{total_forecast:,.0f} units",
         )
 
+
     with forecast_kpi2:
+
         st.metric(
-            "Average Daily Demand",
+            t("average_daily"),
             f"{average_forecast:,.1f} units",
         )
 
+
     with forecast_kpi3:
+
         st.metric(
             "Peak Daily Demand",
             f"{peak_forecast:,.0f} units",
         )
 
+
     with forecast_kpi4:
+
         st.metric(
             "Lowest Daily Demand",
             f"{minimum_forecast:,.0f} units",
         )
+
 
     promotion_text = (
         "an active promotion"
@@ -1187,17 +1311,22 @@ if generate_forecast:
         else "no promotion"
     )
 
+
     st.html(
         f"""
         <div class="forecast-result-card">
+
             <div class="forecast-result-title">
                 📈 Forecast generated successfully
             </div>
+
             <div class="forecast-result-description">
+
                 The model generated a
                 <strong>{forecast_days}-day</strong>
                 demand forecast for
                 <strong>{selected_product}</strong>.
+
                 The forecast assumes
                 <strong>{promotion_text}</strong>,
                 a discount of
@@ -1205,27 +1334,41 @@ if generate_forecast:
                 and
                 <strong>{future_rainfall.lower()}</strong>
                 rainfall conditions.
+
             </div>
+
         </div>
         """
     )
 
+
+    # ========================================================
+    # COMBINED HISTORICAL + FORECAST CHART
+    # ========================================================
+
     st.markdown("---")
 
-    st.subheader("📈 Historical & Forecast Demand")
 
-    st.markdown(
+    st.subheader(
+        "📈 Historical & Forecast Demand"
+    )
+
+
+    st.html(
         f"""
         <div class="forecast-description">
+
             Historical demand is shown together with the
             model-generated forecast for
             <strong>{selected_product}</strong>.
+
         </div>
-        """,
-        unsafe_allow_html=True,
+        """
     )
 
+
     combined_fig = go.Figure()
+
 
     combined_fig.add_trace(
         go.Scatter(
@@ -1239,11 +1382,13 @@ if generate_forecast:
             ),
             hovertemplate=(
                 "<b>%{x|%d %b %Y}</b><br>"
-                "Historical Demand: %{y:,.0f} units"
+                "Historical Demand: "
+                "%{y:,.0f} units"
                 "<extra></extra>"
             ),
         )
     )
+
 
     combined_fig.add_trace(
         go.Scatter(
@@ -1265,22 +1410,32 @@ if generate_forecast:
             ),
             hovertemplate=(
                 "<b>%{x|%d %b %Y}</b><br>"
-                "Forecast Demand: %{y:,.0f} units"
+                "Forecast Demand: "
+                "%{y:,.0f} units"
                 "<extra></extra>"
             ),
         )
     )
 
+
     combined_fig.update_layout(
+
         template="plotly_white",
+
         title=dict(
-            text=f"Historical & {forecast_days}-Day Forecast — {selected_product}",
+            text=(
+                f"Historical & "
+                f"{forecast_days}-Day Forecast — "
+                f"{selected_product}"
+            ),
             font=dict(
                 color="#0F172A",
                 size=20,
             ),
         ),
+
         xaxis=dict(
+
             title=dict(
                 text="Date",
                 font=dict(
@@ -1288,16 +1443,23 @@ if generate_forecast:
                     size=14,
                 ),
             ),
+
             tickfont=dict(
                 color="#475569",
                 size=12,
             ),
+
             gridcolor="#CBD5E1",
+
             zeroline=False,
+
             linecolor="#94A3B8",
+
             mirror=True,
         ),
+
         yaxis=dict(
+
             title=dict(
                 text="Units",
                 font=dict(
@@ -1305,21 +1467,31 @@ if generate_forecast:
                     size=14,
                 ),
             ),
+
             tickfont=dict(
                 color="#475569",
                 size=12,
             ),
+
             gridcolor="#CBD5E1",
+
             zeroline=False,
+
             linecolor="#94A3B8",
+
             mirror=True,
         ),
+
         paper_bgcolor="#E5E7EB",
+
         plot_bgcolor="#E5E7EB",
+
         font=dict(
             color="#0F172A",
         ),
+
         hovermode="x unified",
+
         hoverlabel=dict(
             bgcolor="#FFFFFF",
             bordercolor="#94A3B8",
@@ -1328,23 +1500,29 @@ if generate_forecast:
                 size=13,
             ),
         ),
+
         legend=dict(
             font=dict(
                 color="#0F172A",
                 size=13,
             ),
-            bgcolor="rgba(255,255,255,0.75)",
+            bgcolor=(
+                "rgba(255,255,255,0.75)"
+            ),
             bordercolor="#CBD5E1",
             borderwidth=1,
         ),
+
         margin=dict(
             l=25,
             r=25,
             t=70,
             b=35,
         ),
+
         height=500,
     )
+
 
     st.plotly_chart(
         combined_fig,
@@ -1355,16 +1533,29 @@ if generate_forecast:
         },
     )
 
+
     # ========================================================
     # FORECAST TABLE & EXPORT
     # ========================================================
 
     st.markdown("---")
 
-    st.subheader("📋 Forecast Data & Export")
 
-    table_display = forecast_df.copy()
-    table_display["Date"] = table_display["Date"].dt.strftime("%Y-%m-%d")
+    st.subheader(
+        "📋 Forecast Data & Export"
+    )
+
+
+    table_display = (
+        forecast_df.copy()
+    )
+
+
+    table_display["Date"] = (
+        table_display["Date"]
+        .dt.strftime("%Y-%m-%d")
+    )
+
 
     st.dataframe(
         table_display,
@@ -1372,30 +1563,55 @@ if generate_forecast:
         hide_index=True,
     )
 
-    csv_data = forecast_df.to_csv(index=False).encode("utf-8")
+
+    csv_data = (
+        forecast_df
+        .to_csv(
+            index=False
+        )
+        .encode("utf-8")
+    )
+
 
     st.download_button(
         label="📥 Download Forecast CSV",
         data=csv_data,
-        file_name=f"{selected_product.lower().replace(' ', '_')}_forecast.csv",
+        file_name=(
+            f"{selected_product.lower().replace(' ', '_')}"
+            f"_forecast.csv"
+        ),
         mime="text/csv",
         use_container_width=True,
     )
+
 
     # ========================================================
     # INVENTORY PLANNING NOTE
     # ========================================================
 
-    st.markdown(
+    st.html(
         f"""
         <div class="planning-note">
-            💡 <strong>Inventory Planning Recommendation:</strong> 
-            Based on the model forecast, plan to stock at least 
-            <strong>{int(total_forecast * 1.10):,} units</strong> 
-            (includes a 10% safety margin buffer) for 
-            <strong>{selected_product}</strong> 
-            over the next {forecast_days} days.
+
+            💡 <strong>
+                Inventory Planning Recommendation:
+            </strong>
+
+            Based on the model forecast, plan to stock at least
+
+            <strong>
+                {int(total_forecast * 1.10):,} units
+            </strong>
+
+            (includes a 10% safety margin buffer) for
+
+            <strong>
+                {selected_product}
+            </strong>
+
+            over the next
+            {forecast_days} days.
+
         </div>
-        """,
-        unsafe_allow_html=True,
+        """
     )

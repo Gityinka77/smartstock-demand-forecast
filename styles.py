@@ -74,7 +74,6 @@ def _image_to_base64(image_path):
         )
 
     except Exception:
-
         return None
 
 
@@ -98,8 +97,8 @@ def apply_global_styles():
                 linear-gradient(
                     135deg,
                     #F8FBF9 0%,
-                    #F3F8F5 50%,
-                    #EEF5F1 100%
+                    #F4FAF7 50%,
+                    #EEF7F2 100%
                 ) !important;
 
             color:
@@ -119,18 +118,12 @@ def apply_global_styles():
            ===================================================== */
 
         section[data-testid="stMain"] {
-
-            background:
-                transparent !important;
+            background: transparent !important;
         }
-
 
         .main {
-
-            background:
-                transparent !important;
+            background: transparent !important;
         }
-
 
         .block-container {
 
@@ -170,7 +163,6 @@ def apply_global_styles():
                 none !important;
         }
 
-
         .stAppHeader {
 
             background:
@@ -180,18 +172,12 @@ def apply_global_styles():
                 #F8FBF9 !important;
         }
 
-
         [data-testid="stToolbar"] {
-
-            background:
-                transparent !important;
+            background: transparent !important;
         }
 
-
         [data-testid="stDecoration"] {
-
-            display:
-                none !important;
+            display: none !important;
         }
 
 
@@ -205,7 +191,7 @@ def apply_global_styles():
                 linear-gradient(
                     180deg,
                     #EAF4EF 0%,
-                    #E4F1EB 55%,
+                    #E5F2EC 48%,
                     #DDEDE5 100%
                 ) !important;
 
@@ -217,18 +203,148 @@ def apply_global_styles():
                 rgba(23, 59, 45, 0.06) !important;
         }
 
-
         section[data-testid="stSidebar"] > div {
 
             background:
                 transparent !important;
+
+            padding-top:
+                0.7rem !important;
+        }
+
+        section[data-testid="stSidebar"] * {
+            color: #173B2D;
         }
 
 
-        section[data-testid="stSidebar"] * {
+        /* =====================================================
+           SIDEBAR BRANDING AREA
+           ===================================================== */
+
+        .smartstock-sidebar-brand {
+
+            width:
+                100%;
+
+            text-align:
+                center;
+
+            padding:
+                4px 0 10px 0;
+
+            margin:
+                0;
+        }
+
+
+        .smartstock-sidebar-logo {
+
+            width:
+                104px;
+
+            height:
+                104px;
+
+            object-fit:
+                contain;
+
+            display:
+                block;
+
+            margin:
+                0 auto 8px auto;
+
+            filter:
+                drop-shadow(
+                    0 6px 14px
+                    rgba(23, 59, 45, 0.10)
+                );
+        }
+
+
+        .smartstock-sidebar-brand-title {
 
             color:
-                #173B2D;
+                #075333 !important;
+
+            font-size:
+                21px;
+
+            font-weight:
+                800;
+
+            line-height:
+                1.2;
+        }
+
+
+        .smartstock-sidebar-brand-subtitle {
+
+            color:
+                #527366 !important;
+
+            font-size:
+                11px;
+
+            font-weight:
+                600;
+
+            margin-top:
+                5px;
+        }
+
+
+        /* =====================================================
+           SIDEBAR LANGUAGE SELECTOR
+           ===================================================== */
+
+        .smartstock-sidebar-language {
+
+            margin:
+                2px 0 10px 0;
+
+            padding:
+                0;
+        }
+
+        .smartstock-sidebar-language-label {
+
+            color:
+                #173B2D !important;
+
+            font-size:
+                14px;
+
+            font-weight:
+                700;
+
+            margin-bottom:
+                5px;
+        }
+
+
+        section[data-testid="stSidebar"]
+        div[data-baseweb="select"] > div {
+
+            background:
+                #FFFFFF !important;
+
+            border:
+                1px solid #BFD7CC !important;
+
+            border-radius:
+                10px !important;
+
+            min-height:
+                42px !important;
+        }
+
+
+        section[data-testid="stSidebar"]
+        div[data-baseweb="select"] span {
+
+            color:
+                #173B2D !important;
         }
 
 
@@ -247,6 +363,9 @@ def apply_global_styles():
 
             color:
                 #244D3C !important;
+
+            transition:
+                all 0.15s ease-in-out;
         }
 
 
@@ -283,32 +402,6 @@ def apply_global_styles():
 
 
         /* =====================================================
-           SIDEBAR LANGUAGE SELECTOR
-           ===================================================== */
-
-        section[data-testid="stSidebar"]
-        div[data-baseweb="select"] > div {
-
-            background:
-                #FFFFFF !important;
-
-            border:
-                1px solid #BFD7CC !important;
-
-            border-radius:
-                10px !important;
-        }
-
-
-        section[data-testid="stSidebar"]
-        div[data-baseweb="select"] span {
-
-            color:
-                #173B2D !important;
-        }
-
-
-        /* =====================================================
            HEADINGS
            ===================================================== */
 
@@ -323,7 +416,6 @@ def apply_global_styles():
                 #073B2A !important;
         }
 
-
         h1 {
 
             font-weight:
@@ -332,7 +424,6 @@ def apply_global_styles():
             letter-spacing:
                 -0.03em !important;
         }
-
 
         h2 {
 
@@ -343,18 +434,12 @@ def apply_global_styles():
                 -0.025em !important;
         }
 
-
         h3 {
-
-            font-weight:
-                700 !important;
+            font-weight: 700 !important;
         }
 
-
         p {
-
-            color:
-                #365B4B;
+            color: #365B4B;
         }
 
 
@@ -363,9 +448,7 @@ def apply_global_styles():
            ===================================================== */
 
         a {
-
-            color:
-                #087F5B !important;
+            color: #087F5B !important;
         }
 
 
@@ -412,7 +495,87 @@ def apply_global_styles():
 
 
         /* =====================================================
-           HOME HERO
+           HOME BRANDING
+           ===================================================== */
+
+        .smartstock-home-brand {
+
+            width:
+                100%;
+
+            text-align:
+                center;
+
+            padding:
+                2px 0 24px 0;
+
+            margin-bottom:
+                4px;
+        }
+
+
+        .smartstock-home-logo {
+
+            width:
+                150px;
+
+            height:
+                150px;
+
+            object-fit:
+                contain;
+
+            display:
+                block;
+
+            margin:
+                0 auto 10px auto;
+
+            filter:
+                drop-shadow(
+                    0 8px 18px
+                    rgba(23, 59, 45, 0.12)
+                );
+        }
+
+
+        .smartstock-home-brand-title {
+
+            color:
+                #075333 !important;
+
+            font-size:
+                31px;
+
+            font-weight:
+                850;
+
+            line-height:
+                1.15;
+
+            letter-spacing:
+                -0.035em;
+        }
+
+
+        .smartstock-home-brand-subtitle {
+
+            color:
+                #527366 !important;
+
+            font-size:
+                14px;
+
+            font-weight:
+                650;
+
+            margin-top:
+                6px;
+        }
+
+
+        /* =====================================================
+           HOME HERO / BANNER
            ===================================================== */
 
         .smartstock-hero {
@@ -440,18 +603,23 @@ def apply_global_styles():
 
             border:
                 1px solid
-                rgba(10, 83, 51, 0.22);
+                rgba(10, 83, 51, 0.16);
 
             box-shadow:
                 0 16px 38px
-                rgba(23, 59, 45, 0.16);
+                rgba(23, 59, 45, 0.12);
+
+            /*
+            Brighter fallback background.
+            The actual banner image is still used when available.
+            */
 
             background:
                 linear-gradient(
                     135deg,
-                    #075333,
-                    #0B7653,
-                    #149A73
+                    #14966F 0%,
+                    #20B486 50%,
+                    #52CDA5 100%
                 );
 
             background-size:
@@ -465,6 +633,12 @@ def apply_global_styles():
         }
 
 
+        /*
+        Brighter overlay than the previous dark-green version.
+        It preserves readability while allowing the banner
+        artwork to remain visible.
+        */
+
         .smartstock-hero-overlay {
 
             position:
@@ -476,9 +650,9 @@ def apply_global_styles():
             background:
                 linear-gradient(
                     90deg,
-                    rgba(4, 54, 34, 0.90) 0%,
-                    rgba(4, 54, 34, 0.70) 48%,
-                    rgba(4, 54, 34, 0.15) 100%
+                    rgba(3, 71, 45, 0.42) 0%,
+                    rgba(3, 71, 45, 0.22) 45%,
+                    rgba(3, 71, 45, 0.04) 100%
                 );
 
             pointer-events:
@@ -517,11 +691,11 @@ def apply_global_styles():
                 999px;
 
             background:
-                rgba(255,255,255,0.14);
+                rgba(255,255,255,0.22);
 
             border:
                 1px solid
-                rgba(255,255,255,0.32);
+                rgba(255,255,255,0.48);
 
             color:
                 #FFFFFF !important;
@@ -559,13 +733,17 @@ def apply_global_styles():
 
             letter-spacing:
                 -0.035em;
+
+            text-shadow:
+                0 2px 10px
+                rgba(0, 0, 0, 0.18);
         }
 
 
         .smartstock-hero-description {
 
             color:
-                rgba(255,255,255,0.92) !important;
+                rgba(255,255,255,0.98) !important;
 
             font-size:
                 16px;
@@ -578,6 +756,10 @@ def apply_global_styles():
 
             margin:
                 0;
+
+            text-shadow:
+                0 1px 5px
+                rgba(0, 0, 0, 0.12);
         }
 
 
@@ -630,9 +812,7 @@ def apply_global_styles():
 
 
         [data-testid="stMetricLabel"] {
-
-            color:
-                #527366 !important;
+            color: #527366 !important;
         }
 
 
@@ -703,9 +883,7 @@ def apply_global_styles():
 
         .stButton > button *,
         .stDownloadButton > button * {
-
-            color:
-                #FFFFFF !important;
+            color: #FFFFFF !important;
         }
 
 
@@ -790,9 +968,7 @@ def apply_global_styles():
            ===================================================== */
 
         [data-testid="stAlert"] {
-
-            border-radius:
-                13px !important;
+            border-radius: 13px !important;
         }
 
 
@@ -801,9 +977,7 @@ def apply_global_styles():
            ===================================================== */
 
         hr {
-
-            border-color:
-                #D7E5DE !important;
+            border-color: #D7E5DE !important;
         }
 
 
@@ -913,16 +1087,11 @@ def apply_global_styles():
            ===================================================== */
 
         #MainMenu {
-
-            visibility:
-                hidden;
+            visibility: hidden;
         }
 
-
         footer {
-
-            visibility:
-                hidden;
+            visibility: hidden;
         }
 
         </style>
@@ -943,45 +1112,21 @@ def render_sidebar_logo():
 
     if logo_data:
 
-        # IMPORTANT:
-        # Use st.sidebar.html(), NOT st.sidebar.markdown().
-        # This prevents the HTML from appearing as code.
-
         st.sidebar.html(
             f"""
-            <div style="
-                width: 100%;
-                text-align: center;
-                padding: 8px 0 20px 0;
-            ">
+            <div class="smartstock-sidebar-brand">
 
                 <img
+                    class="smartstock-sidebar-logo"
                     src="{logo_data}"
                     alt="SmartStock Logo"
-                    style="
-                        width: 92px;
-                        height: 92px;
-                        object-fit: contain;
-                        display: block;
-                        margin: 0 auto 10px auto;
-                    "
                 >
 
-                <div style="
-                    color: #075333;
-                    font-size: 21px;
-                    font-weight: 800;
-                    line-height: 1.2;
-                ">
+                <div class="smartstock-sidebar-brand-title">
                     SmartStock
                 </div>
 
-                <div style="
-                    color: #527366;
-                    font-size: 11px;
-                    font-weight: 600;
-                    margin-top: 5px;
-                ">
+                <div class="smartstock-sidebar-brand-subtitle">
                     SME Demand Forecasting
                 </div>
 
@@ -993,46 +1138,120 @@ def render_sidebar_logo():
 
         st.sidebar.html(
             """
-            <div style="
-                width: 100%;
-                text-align: center;
-                padding: 12px 0 20px 0;
-            ">
+            <div class="smartstock-sidebar-brand">
 
                 <div style="
-                    width: 72px;
-                    height: 72px;
+                    width: 82px;
+                    height: 82px;
                     margin: 0 auto 10px auto;
-                    border-radius: 16px;
+                    border-radius: 18px;
                     display: flex;
                     align-items: center;
                     justify-content: center;
                     background:
                         linear-gradient(
                             135deg,
-                            #075333,
-                            #0F9F72
+                            #087F5B,
+                            #24B58A
                         );
                     color: #FFFFFF;
-                    font-size: 34px;
+                    font-size: 38px;
+                    box-shadow:
+                        0 6px 14px
+                        rgba(23,59,45,0.10);
                 ">
-                    📈
+                    🛒
                 </div>
 
-                <div style="
-                    color: #075333;
-                    font-size: 21px;
-                    font-weight: 800;
-                ">
+                <div class="smartstock-sidebar-brand-title">
                     SmartStock
                 </div>
 
-                <div style="
-                    color: #527366;
-                    font-size: 11px;
-                    margin-top: 5px;
-                ">
+                <div class="smartstock-sidebar-brand-subtitle">
                     SME Demand Forecasting
+                </div>
+
+            </div>
+            """
+        )
+
+
+# ============================================================
+# HOME LOGO
+# ============================================================
+#
+# Retained for compatibility with older page code.
+# The current enhancement-v2 Home page should NOT call this
+# function because the primary logo now belongs at the top
+# of the sidebar.
+#
+# ============================================================
+
+def render_home_logo():
+
+    logo_data = _image_to_base64(
+        LOGO_PATH
+    )
+
+    if logo_data:
+
+        st.html(
+            f"""
+            <div class="smartstock-home-brand">
+
+                <img
+                    class="smartstock-home-logo"
+                    src="{logo_data}"
+                    alt="SmartStock Logo"
+                >
+
+                <div class="smartstock-home-brand-title">
+                    SmartStock.AI
+                </div>
+
+                <div class="smartstock-home-brand-subtitle">
+                    SME Demand Forecasting Decision Engine
+                </div>
+
+            </div>
+            """
+        )
+
+    else:
+
+        st.html(
+            """
+            <div class="smartstock-home-brand">
+
+                <div style="
+                    width: 120px;
+                    height: 120px;
+                    margin: 0 auto 12px auto;
+                    border-radius: 24px;
+                    display: flex;
+                    align-items: center;
+                    justify-content: center;
+                    background:
+                        linear-gradient(
+                            135deg,
+                            #087F5B,
+                            #24B58A
+                        );
+                    color: #FFFFFF;
+                    font-size: 50px;
+                    box-shadow:
+                        0 8px 18px
+                        rgba(23,59,45,0.12);
+                ">
+                    🛒
+                </div>
+
+                <div class="smartstock-home-brand-title">
+                    SmartStock.AI
+                </div>
+
+                <div class="smartstock-home-brand-subtitle">
+                    SME Demand Forecasting Decision Engine
                 </div>
 
             </div>
@@ -1070,9 +1289,9 @@ def render_header_banner(title, subtitle):
             background:
                 linear-gradient(
                     135deg,
-                    #075333 0%,
-                    #0B7653 50%,
-                    #149A73 100%
+                    #14966F 0%,
+                    #20B486 50%,
+                    #52CDA5 100%
                 );
         """
 
